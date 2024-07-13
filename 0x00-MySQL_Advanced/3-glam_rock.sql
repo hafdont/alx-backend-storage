@@ -1,6 +1,6 @@
 -- Script to list bands
 
-SELECT band_name, (2022 - formed) - IFNULL((2022 - SPLIT), 0) AS lifespan
+SELECT band_name, (IFNULL(split, '2022') - formed) AS lifespan
 	FROM metal_bands
-	WHERE main_style = 'Glam rock'
-	ORDERBY lifespan DESC;
+	WHERE FIND_IN_SET('Glam rock', IFNULL(style, "")) > 0
+	ORDER BY lifespan DESC;
