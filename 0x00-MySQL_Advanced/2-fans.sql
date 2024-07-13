@@ -1,9 +1,6 @@
---  Scripts that creates a users Table
+-- SCripts that lists bands by their longevity
 
-CREATE TABLE IF NOT EXISTS users (
-	id INT NOT NULL AUTO_INCREMENT,
-	email VARCHAR(255) NOT NULL UNIQUE,
-	name VARCHAR(255),
-	country ENUM('US', 'CO', 'TN') NOT NULL DEFAULT 'US',
-	PRIMARY KEY (id)
-);
+SELECT origin, SUM(nb_fans)AS nb_fans
+FROM metal_brands
+GROUP by origin
+ORDER BY nb_fans DESC;
