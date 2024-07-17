@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 This module contains the Cache class which uses Redis for storing data,
-retrieving data, and counting method calls.
+retrieving data, counting method calls, storing call history, and replaying the history.
 """
 import redis
 import uuid
@@ -30,6 +30,33 @@ def count_calls(method: Callable) -> Callable:
     return wrapper
 
 
+def call_history(method: Callable) -> Callable:
+    """
+    Decorator to store the history of inputs and outputs for a function.
+    
+    Args:
+        method (Callable): The method to be decorated.
+    
+    Returns:
+        Callable: The decorated method.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """
+        Wrapper function to store the inputs and outputs of the original method.
+        """
+        key = method.__qualname__
+        inputs_key = f"{key}:inputs"
+        outputs_key = f"{key}:outputs"
+
+        self._redis.rpush(inputs_key, str(args))
+        output = method(self, *args, **kwargs)
+        self._redis.rpush(outputs_key, output)
+        
+        return output
+    return wrapper
+
+
 class Cache:
     """
     Cache class for storing data in Redis and retrieving it.
@@ -42,6 +69,7 @@ class Cache:
         self._redis.flushdb()
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store data in Redis with a random key and return the key.
@@ -96,13 +124,30 @@ class Cache:
         """
         return self.get(key, int)
 
+    def replay(self, method: Callable):
+        """
+        Display the history of calls of a particular function.
+        
+        Args:
+            method (Callable): The function to replay the history for.
+        """
+        key = method.__qualname__
+        inputs_key = f"{key}:inputs"
+        outputs_key = f"{key}:outputs"
+
+        inputs = self._redis.lrange(inputs_key, 0, -1)
+        outputs = self._redis.lrange(outputs_key, 0, -1)
+
+        print(f"{key} was called {len(inputs)} times:")
+        for input, output in zip(inputs, outputs):
+            print(f"{key}(*{input.decode('utf-8')}) -> {output.decode('utf-8')}")
+
 
 if __name__ == "__main__":
     cache = Cache()
 
-    cache.store(b"first")
-    print(cache.get(cache.store.__qualname__))
+    cache.store("foo")
+    cache.store("bar")
+    cache.store(42)
 
-    cache.store(b"second")
-    cache.store(b"third")
-    print(cache.get(cache.store.__qualname__))
+    cache.replay(cache.store)
