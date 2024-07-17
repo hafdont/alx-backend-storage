@@ -1,4 +1,2 @@
-//  script that inserts a document in the collection school:
-db.school.insert({
-    name: "Holberton school",
-})
+// script that creates or uses a databse
+use my_db;

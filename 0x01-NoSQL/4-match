@@ -1,0 +1,2 @@
+//script that lists all documents with aspecific name in the collection
+db.school.find({ name: "Holberton school" }).pretty()
