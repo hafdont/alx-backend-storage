@@ -1,0 +1,2 @@
+// script that creates or uses a databse
+use my_db;
